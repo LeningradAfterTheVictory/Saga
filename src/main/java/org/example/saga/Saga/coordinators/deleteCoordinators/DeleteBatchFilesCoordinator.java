@@ -3,18 +3,24 @@ package org.example.saga.Saga.coordinators.deleteCoordinators;
 import org.apache.commons.io.IOUtils;
 import org.example.saga.Saga.coordinators.uploadCoordinators.UploadBatchFilesCoordinator;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
+import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.mock.web.MockMultipartFile;
+import org.springframework.web.util.UriComponentsBuilder;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
+import java.net.URI;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 
+@Service
 public class DeleteBatchFilesCoordinator {
     private final RestTemplate restTemplate;
     private final UploadBatchFilesCoordinator filesCoordinator;
@@ -30,25 +36,30 @@ public class DeleteBatchFilesCoordinator {
         this.filesCoordinator = new UploadBatchFilesCoordinator();
     }
 
-    public void tryDelete(List<String> fileUrls) {
-        tryDeleteFromS3(baseS3Url, fileUrls);
-        tryDeleteFromDB(baseS3Url, baseQueryUrl, fileUrls);
+    public void tryDelete(List<String> fileUrls, Long id) {
+        tryDeleteFromS3(fileUrls);
+        tryDeleteFromDB(fileUrls, id);
     }
 
-    private void tryDeleteFromS3(String baseS3Url, List<String> fileUrls) {
+    public void tryDeleteFromS3(List<String> fileUrls) {
         try {
-            for (String fileUrl : fileUrls) {
-                restTemplate.delete(baseS3Url + fileUrl);
-            }
+            URI uri = UriComponentsBuilder.fromUriString(baseS3Url + "/batch-delete")
+                    .queryParam("urls", fileUrls.toArray())
+                    .build()
+                    .toUri();
+
+            restTemplate.exchange(uri, HttpMethod.DELETE, HttpEntity.EMPTY, String.class);
+
+            System.out.println("Files deleted successfully from S3.");
         } catch (Exception e) {
             System.err.println("Error while deleting from S3: " + e.getMessage());
         }
     }
 
-    private void tryDeleteFromDB(String baseS3Url, String baseQueryUrl, List<String> fileUrls) {
+    public void tryDeleteFromDB(List<String> fileUrls, Long id) {
         try {
             for (String fileUrl : fileUrls) {
-                restTemplate.delete(baseQueryUrl + fileUrl);
+                restTemplate.delete(baseQueryUrl + "/" + id);
             }
         } catch (Exception e) {
             System.err.println("Error while deleting from DB: " + e.getMessage());

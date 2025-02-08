@@ -27,9 +27,9 @@ public class UploadBatchFilesCoordinator {
         this.restTemplate = new RestTemplate();
     }
 
-        public void tryUpload(List<MultipartFile> files) {
-            tryExtractingViaS3(baseS3Url, files);
-            tryUploadToDB(baseAttractionUrl, baseS3Url);
+    public void tryUpload(List<MultipartFile> files) {
+        tryExtractingViaS3(baseS3Url, files);
+        tryUploadToDB(baseAttractionUrl, baseS3Url);
     }
 
     public void tryExtractingViaS3(String baseS3Url, List<MultipartFile> files) {
