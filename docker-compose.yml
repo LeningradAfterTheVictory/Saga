@@ -1,0 +1,8 @@
+services:
+  java-app:
+    build: .
+    environment:
+      BASE_ATTRACTION_URL: http://localhost:8080/api/attractions
+      BASE_S3_URL: http://localhost:8081/files/
+    ports:
+      - "5300:8080"
