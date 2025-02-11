@@ -1,32 +1,34 @@
-package org.example.saga.Saga.coordinators.deleteCoordinators;
+package org.example.saga.Saga.application.responsibilities;
 
 import org.apache.commons.io.IOUtils;
-import org.example.saga.Saga.coordinators.uploadCoordinators.UploadFileCoordinator;
 import org.example.saga.Saga.dto.Attraction;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
-import org.springframework.stereotype.Service;
+import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.multipart.MultipartFile;
-import org.springframework.mock.web.MockMultipartFile;
+import org.springframework.web.util.UriComponentsBuilder;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
+import java.net.URI;
 import java.net.URL;
+import java.util.ArrayList;
 import java.util.List;
 
-@Service
-public class DeleteFileCoordinator {
+public class Delete {
     private final RestTemplate restTemplate;
-    private final UploadFileCoordinator fileCoordinator;
-    private final DeleteBatchFilesCoordinator deleteFilesCoordinator;
+    private final Upload uploadOperation;
 
-    private List<String> linksPreview;
-    private List<String> linksBefore;
-    private List<String> linksIn;
-    private List<String> linksAfter;
+    private List<String> linksPreview = new ArrayList<>();
+    private List<String> linksBefore = new ArrayList<>();
+    private List<String> linksIn = new ArrayList<>();
+    private List<String> linksAfter = new ArrayList<>();
 
     @Value("${base.attraction.url}")
     private String baseAttractionUrl;
@@ -34,28 +36,63 @@ public class DeleteFileCoordinator {
     @Value("${base.s3.url}")
     private String baseS3Url;
 
-    public DeleteFileCoordinator() {
-        this.restTemplate = new RestTemplate();
-        this.fileCoordinator = new UploadFileCoordinator();
-        this.deleteFilesCoordinator = new DeleteBatchFilesCoordinator();
+    @Autowired
+    public Delete(RestTemplate restTemplate, Upload uploadOperation) {
+        this.restTemplate = restTemplate;
+        this.uploadOperation = uploadOperation;
     }
 
-    public void tryDelete(String fileUrl, Long id) {
-        tryFindByById(id);
-        tryDeleteFromDB(baseS3Url, baseAttractionUrl, fileUrl, id);
+    public void tryDeleteFromS3_batchFiles(List<String> fileUrls) {
+        try {
+            URI uri = UriComponentsBuilder.fromUriString(baseS3Url + "/batch-delete")
+                    .queryParam("urls", fileUrls.toArray())
+                    .build()
+                    .toUri();
+
+            restTemplate.exchange(uri, HttpMethod.DELETE, HttpEntity.EMPTY, String.class);
+
+            System.out.println("Files deleted successfully from S3.");
+        } catch (Exception e) {
+            System.err.println("Error while deleting from S3: " + e.getMessage());
+        }
     }
 
-    private void tryFindByById(Long id) {
+    public void tryDeleteFromDB(Long id) {
+        try {
+            restTemplate.delete(baseAttractionUrl + "/" + id);
+        } catch (Exception e) {
+            System.err.println("Error while deleting from DB: " + e.getMessage());
+
+            List<MultipartFile> links = new ArrayList<>();
+
+            for(String preview : linksPreview) {
+                links.add(convertUrlToMultipartFile(preview));
+            }
+            for(String before : linksBefore) {
+                links.add(convertUrlToMultipartFile(before));
+            }
+            for(String in : linksIn) {
+                links.add(convertUrlToMultipartFile(in));
+            }
+            for(String after : linksAfter) {
+                links.add(convertUrlToMultipartFile(after));
+            }
+
+            uploadOperation.tryUploadToS3_batchFiles(links);
+        }
+    }
+
+    public void tryFindByById(Long id) {
         try {
             var response = restTemplate.getForEntity(baseAttractionUrl + "/" + id, Attraction.class);
 
             if (response.getStatusCode() == HttpStatus.OK) {
                 var attraction = response.getBody();
 
-                deleteFilesCoordinator.tryDeleteFromS3(attraction.getLinksPreview());
-                deleteFilesCoordinator.tryDeleteFromS3(attraction.getLinksIn());
-                deleteFilesCoordinator.tryDeleteFromS3(attraction.getLinksBefore());
-                deleteFilesCoordinator.tryDeleteFromS3(attraction.getLinksAfter());
+                tryDeleteFromS3_batchFiles(attraction.getLinksPreview());
+                tryDeleteFromS3_batchFiles(attraction.getLinksIn());
+                tryDeleteFromS3_batchFiles(attraction.getLinksBefore());
+                tryDeleteFromS3_batchFiles(attraction.getLinksAfter());
 
                 linksPreview = attraction.getLinksPreview();
                 linksIn = attraction.getLinksIn();
@@ -66,19 +103,6 @@ public class DeleteFileCoordinator {
             }
         } catch (Exception e) {
             System.out.println("Could not get the entity from db: " + e);
-        }
-    }
-
-    private void tryDeleteFromDB(String baseS3Url, String baseAttractionUrl, String fileUrl, Long id) {
-        try {
-            restTemplate.delete(baseAttractionUrl + "/" + id);
-        } catch (Exception e) {
-            System.err.println("Error while deleting from DB: " + e.getMessage());
-
-            MultipartFile file = convertUrlToMultipartFile(fileUrl);
-            if (file != null) {
-                fileCoordinator.tryExtractingViaS3(baseS3Url, file);
-            }
         }
     }
 
