@@ -1,20 +1,20 @@
-package org.example.saga.Saga.coordinators.uploadCoordinators;
+package org.example.saga.Saga.application.responsibilities;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
-import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.ArrayList;
 import java.util.List;
 
-@Service
-public class UploadBatchFilesCoordinator {
-
+public class Upload {
     private final RestTemplate restTemplate;
+
+    private String uploadedFileUrl = "";
     private final List<String> uploadedFileUrls = new ArrayList<>();
 
     @Value("${base.attraction.url}")
@@ -23,16 +23,12 @@ public class UploadBatchFilesCoordinator {
     @Value("${base.s3.url}")
     private String baseS3Url;
 
-    public UploadBatchFilesCoordinator() {
-        this.restTemplate = new RestTemplate();
+    @Autowired
+    public Upload(RestTemplate restTemplate) {
+        this.restTemplate = restTemplate;
     }
 
-        public void tryUpload(List<MultipartFile> files) {
-            tryExtractingViaS3(baseS3Url, files);
-            tryUploadToDB(baseAttractionUrl, baseS3Url);
-    }
-
-    public void tryExtractingViaS3(String baseS3Url, List<MultipartFile> files) {
+    public void tryUploadToS3_batchFiles(List<MultipartFile> files) {
         try {
             String uploadFilesUrl = baseS3Url + "/batch-upload";
             HttpHeaders headers = new HttpHeaders();
@@ -71,7 +67,7 @@ public class UploadBatchFilesCoordinator {
         }
     }
 
-    public void tryUploadToDB(String baseAttractionUrl, String baseS3Url) {
+    public void tryUploadToDB_batchFiles() {
         try {
             String uploadQueryUrl = baseAttractionUrl + "/batch-upload";
             HttpHeaders headers = new HttpHeaders();
@@ -104,6 +100,83 @@ public class UploadBatchFilesCoordinator {
                     System.err.println("Failed to delete uploaded file from db during compensation: " + deleteException.getMessage());
                 }
             }
+            throw new RuntimeException("Saga failed and compensating actions were executed.");
+        }
+    }
+
+    public void tryUploadToS3_file(MultipartFile file) {
+        try {
+            String uploadFilesUrl = baseS3Url + "/upload";
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.MULTIPART_FORM_DATA);
+
+            HttpEntity<MultipartFile> requestEntity = new HttpEntity<>(file, headers);
+
+            var filesResponse = restTemplate.postForEntity(uploadFilesUrl, requestEntity, List.class);
+
+            if (filesResponse.getStatusCode().is2xxSuccessful() && filesResponse.getBody() != null) {
+                uploadedFileUrl = filesResponse.getBody().toString();
+                System.out.println("File uploaded successfully: " + uploadedFileUrl);
+            } else {
+                throw new RuntimeException("Failed to upload file.");
+            }
+        } catch (Exception e) {
+            System.err.println("Error during saga execution: " + e.getMessage());
+
+            if (!uploadedFileUrl.isEmpty()) {
+                String deleteFilesUrl = baseS3Url + "/delete";
+                HttpHeaders headers = new HttpHeaders();
+                headers.setContentType(MediaType.APPLICATION_JSON);
+
+                HttpEntity<String> deleteRequest = new HttpEntity<>(uploadedFileUrl, headers);
+
+                try {
+                    restTemplate.postForEntity(deleteFilesUrl, deleteRequest, String.class);
+                    System.out.println("Compensating action: Uploaded file to S3 deleted successfully.");
+                } catch (Exception deleteException) {
+                    System.err.println("Failed to delete uploaded file during compensation: " + deleteException.getMessage());
+                }
+            }
+
+            throw new RuntimeException("Could not upload file to S3");
+        }
+    }
+
+    public void tryUploadToDB_file() {
+        try {
+            String uploadQueryUrl = baseAttractionUrl + "/upload";
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.MULTIPART_FORM_DATA);
+
+            HttpEntity<String> requestEntity = new HttpEntity<>(uploadedFileUrl, headers);
+
+            var queryResponse = restTemplate.postForEntity(uploadQueryUrl, requestEntity, List.class);
+
+            if (queryResponse.getStatusCode().is2xxSuccessful() && queryResponse.getBody() != null) {
+                System.out.println("File uploaded successfully: " + uploadedFileUrl);
+            } else {
+                throw new RuntimeException("Failed to upload file to db.");
+            }
+
+        } catch (Exception e) {
+            System.err.println("Error during saga execution: " + e.getMessage());
+
+            // if not so try to delete leftover from S3
+            if (!uploadedFileUrl.isEmpty()) {
+                String deleteFileUrl = baseS3Url + "/delete";
+                HttpHeaders headers = new HttpHeaders();
+                headers.setContentType(MediaType.APPLICATION_JSON);
+
+                HttpEntity<String> deleteRequest = new HttpEntity<>(uploadedFileUrl, headers);
+
+                try {
+                    restTemplate.postForEntity(deleteFileUrl, deleteRequest, String.class);
+                    System.out.println("Compensating action: Uploaded file to db deleted successfully.");
+                } catch (Exception deleteException) {
+                    System.err.println("Failed to delete uploaded file from db during compensation: " + deleteException.getMessage());
+                }
+            }
+
             throw new RuntimeException("Saga failed and compensating actions were executed.");
         }
     }
