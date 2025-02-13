@@ -41,19 +41,21 @@ public class SagaService {
             deleteOperation.tryDeleteFromDB(id);
         }
     }
-    
+
     public void tryDelete_file(Long id) {
         deleteOperation.tryFindByById(id);
         deleteOperation.tryDeleteFromDB(id);
     }
 
-    public void tryUpload_file(MultipartFile file) {
+    public void tryUpload_file(MultipartFile file, Attraction attraction) {
         uploadOperation.tryUploadToS3_file(file);
-        uploadOperation.tryUploadToDB_file();
+        uploadOperation.tryUploadToDB_file(attraction);
     }
 
-    public void tryUpload_batchFiles(List<MultipartFile> files) {
+    public void tryUpload_batchFiles(List<MultipartFile> files, List<Attraction> attractions) {
         uploadOperation.tryUploadToS3_batchFiles(files);
-        uploadOperation.tryUploadToDB_batchFiles();
+        for (Attraction attraction : attractions) {
+            uploadOperation.tryUploadToDB_file(attraction);
+        }
     }
 }
