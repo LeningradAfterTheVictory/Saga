@@ -65,22 +65,28 @@ public class Delete {
         } catch (Exception e) {
             System.err.println("Error while deleting from DB: " + e.getMessage());
 
-            List<MultipartFile> links = new ArrayList<>();
+            List<MultipartFile> links_preview = new ArrayList<>();
+            List<MultipartFile> links_before = new ArrayList<>();
+            List<MultipartFile> links_in = new ArrayList<>();
+            List<MultipartFile> links_after = new ArrayList<>();
 
             for(String preview : linksPreview) {
-                links.add(convertUrlToMultipartFile(preview));
+                links_preview.add(convertUrlToMultipartFile(preview));
             }
             for(String before : linksBefore) {
-                links.add(convertUrlToMultipartFile(before));
+                links_before.add(convertUrlToMultipartFile(before));
             }
             for(String in : linksIn) {
-                links.add(convertUrlToMultipartFile(in));
+                links_in.add(convertUrlToMultipartFile(in));
             }
             for(String after : linksAfter) {
-                links.add(convertUrlToMultipartFile(after));
+                links_after.add(convertUrlToMultipartFile(after));
             }
 
-            uploadOperation.tryUploadToS3_batchFiles(links);
+            uploadOperation.tryUploadToS3_batchFiles(links_preview, "preview");
+            uploadOperation.tryUploadToS3_batchFiles(links_before, "before");
+            uploadOperation.tryUploadToS3_batchFiles(links_in, "in");
+            uploadOperation.tryUploadToS3_batchFiles(links_after, "after");
         }
     }
 

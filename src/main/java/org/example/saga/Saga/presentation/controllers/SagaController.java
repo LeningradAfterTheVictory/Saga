@@ -59,10 +59,13 @@ public class SagaController {
     })
     public void tryUpload_file(
             @Parameter(description = "Файл для загрузки", required = true)
-            @RequestBody MultipartFile file,
+            @RequestBody MultipartFile filePreview,
+            @RequestBody MultipartFile fileBefore,
+            @RequestBody MultipartFile fileIn,
+            @RequestBody MultipartFile fileAfter,
             @Parameter(description = "Достопримечательность, связанная с файлом", required = true)
             @RequestBody Attraction attraction) {
-        _sagaService.tryUpload_file(file, attraction);
+        _sagaService.tryUpload_file(filePreview, fileBefore, fileIn, fileAfter, attraction);
     }
 
     @PostMapping("/batch-upload")
@@ -74,9 +77,12 @@ public class SagaController {
     })
     public void tryUpload_batchFiles(
             @Parameter(description = "Список файлов для загрузки", required = true)
-            @RequestBody List<MultipartFile> files,
+            @RequestBody List<MultipartFile> filesPreview,
+            @RequestBody List<MultipartFile> filesBefore,
+            @RequestBody List<MultipartFile> filesIn,
+            @RequestBody List<MultipartFile> filesAfter,
             @Parameter(description = "Список достопримечательностей, связанных с файлами", required = true)
             @RequestBody List<Attraction> attractions) {
-        _sagaService.tryUpload_batchFiles(files, attractions);
+        _sagaService.tryUpload_batchFiles(filesPreview, filesBefore, filesIn, filesAfter, attractions);
     }
 }

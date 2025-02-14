@@ -48,6 +48,22 @@ public class Attraction {
         this.linksPreview = linksPreview;
     }
 
+    public void addToLinksPreview(String preview) {
+        this.linksPreview.add(preview);
+    }
+
+    public void addToLinksBefore(String before) {
+        this.linksBefore.add(before);
+    }
+
+    public void addToLinksIn(String in) {
+        this.linksIn.add(in);
+    }
+
+    public void addToLinksAfter(String after) {
+        this.linksAfter.add(after);
+    }
+
 
     public Long getId() {
         return id;

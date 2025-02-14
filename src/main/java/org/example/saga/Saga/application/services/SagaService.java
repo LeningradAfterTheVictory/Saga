@@ -1,24 +1,14 @@
 package org.example.saga.Saga.application.services;
 
-import org.apache.commons.io.IOUtils;
 import org.example.saga.Saga.application.responsibilities.Delete;
 import org.example.saga.Saga.application.responsibilities.Upload;
 import org.example.saga.Saga.dto.Attraction;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.*;
-import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.stereotype.Service;
-import org.springframework.web.client.RestTemplate;
 import org.springframework.web.multipart.MultipartFile;
-import org.springframework.web.util.UriComponentsBuilder;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.net.HttpURLConnection;
-import java.net.URI;
-import java.net.URL;
-import java.util.ArrayList;
+
+
 import java.util.List;
 
 @Service
@@ -47,13 +37,31 @@ public class SagaService {
         deleteOperation.tryDeleteFromDB(id);
     }
 
-    public void tryUpload_file(MultipartFile file, Attraction attraction) {
-        uploadOperation.tryUploadToS3_file(file);
+    public void tryUpload_file(
+            MultipartFile filePreview,
+            MultipartFile fileBefore,
+            MultipartFile fileIn,
+            MultipartFile fileAfter,
+            Attraction attraction) {
+        uploadOperation.tryUploadToS3_file(filePreview, "preview");
+        uploadOperation.tryUploadToS3_file(fileBefore, "before");
+        uploadOperation.tryUploadToS3_file(fileIn, "in");
+        uploadOperation.tryUploadToS3_file(fileAfter, "after");
+        
         uploadOperation.tryUploadToDB_file(attraction);
     }
 
-    public void tryUpload_batchFiles(List<MultipartFile> files, List<Attraction> attractions) {
-        uploadOperation.tryUploadToS3_batchFiles(files);
+    public void tryUpload_batchFiles(
+            List<MultipartFile> filesPreview,
+            List<MultipartFile> filesBefore,
+            List<MultipartFile> filesIn,
+            List<MultipartFile> filesAfter,
+            List<Attraction> attractions) {
+        uploadOperation.tryUploadToS3_batchFiles(filesPreview, "preview");
+        uploadOperation.tryUploadToS3_batchFiles(filesBefore, "before");
+        uploadOperation.tryUploadToS3_batchFiles(filesIn, "in");
+        uploadOperation.tryUploadToS3_batchFiles(filesAfter, "after");
+
         for (Attraction attraction : attractions) {
             uploadOperation.tryUploadToDB_file(attraction);
         }
