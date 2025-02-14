@@ -52,14 +52,14 @@ public class SagaController {
     }
 
     @PostMapping("/batch-upload")
-    @Operation(summary = "Загрузить несколько файлов", description = "Загружает несколько файлов и связывает их с достопримечательностями")
+    @Operation(summary = "Загрузить достопремичательность", description = "Загружает файлы и сохраняет в достопремичательность")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Файлы успешно загружены"),
             @ApiResponse(responseCode = "400", description = "Неверный запрос"),
             @ApiResponse(responseCode = "500", description = "Внутренняя ошибка сервера")
     })
     public void tryUpload_batchFiles(
-            @Parameter(description = "Список файлов для загрузки", required = true)
+            @Parameter(description = "Отправленная достопремичательность на обработку", required = true)
             @RequestBody ReceivedAttraction receivedAttraction) {
         _sagaService.tryUpload_batchFiles(receivedAttraction);
     }
