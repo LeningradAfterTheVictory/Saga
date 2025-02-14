@@ -51,24 +51,6 @@ public class SagaController {
         _sagaService.tryDelete_file(id);
     }
 
-    @PostMapping("/upload")
-    @Operation(summary = "Загрузить файл", description = "Загружает файл и связывает его с достопримечательностью")
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Файл успешно загружен"),
-            @ApiResponse(responseCode = "400", description = "Неверный запрос"),
-            @ApiResponse(responseCode = "500", description = "Внутренняя ошибка сервера")
-    })
-    public void tryUpload_file(
-            @Parameter(description = "Файл для загрузки", required = true)
-            @RequestBody MultipartFile filePreview,
-            @RequestBody MultipartFile fileBefore,
-            @RequestBody MultipartFile fileIn,
-            @RequestBody MultipartFile fileAfter,
-            @Parameter(description = "Достопримечательность, связанная с файлом", required = true)
-            @RequestBody Attraction attraction) {
-        _sagaService.tryUpload_file(filePreview, fileBefore, fileIn, fileAfter, attraction);
-    }
-
     @PostMapping("/batch-upload")
     @Operation(summary = "Загрузить несколько файлов", description = "Загружает несколько файлов и связывает их с достопримечательностями")
     @ApiResponses(value = {
