@@ -24,8 +24,6 @@ public class Upload {
     private String baseS3Url;
 
 
-    private final List<String> uploadedSingleFileUrl = new ArrayList<>();
-
     private final List<String> uploadedLinksPreview = new ArrayList<>();
     private final List<String> uploadedLinksBefore = new ArrayList<>();
     private final List<String> uploadedLinksIn = new ArrayList<>();
@@ -34,23 +32,6 @@ public class Upload {
     @Autowired
     public Upload(RestTemplate restTemplate) {
         this.restTemplate = restTemplate;
-    }
-
-    public void tryUploadToS3_file(MultipartFile file, String type) {
-        String uploadFilesUrl = baseS3Url + "/upload";
-        HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.MULTIPART_FORM_DATA);
-
-        HttpEntity<MultipartFile> requestEntity = new HttpEntity<>(file, headers);
-
-        var filesResponse = restTemplate.postForEntity(uploadFilesUrl, requestEntity, List.class);
-
-        if (filesResponse.getStatusCode().is2xxSuccessful() && filesResponse.getBody() != null) {
-            uploadedSingleFileUrl.add(filesResponse.getBody().toString());
-            System.out.println("File uploaded successfully: " + filesResponse.getBody().toString());
-        } else {
-            throw new RuntimeException("Failed to upload file.");
-        }
     }
 
     public void tryUploadToS3_batchFiles(List<MultipartFile> files, String type) {
@@ -77,24 +58,18 @@ public class Upload {
                     uploadedLinksAfter.addAll(filesResponse.getBody().stream().toList());
                     break;
             }
-            System.out.println("File uploaded successfully: " + filesResponse.getBody().toString());
+            System.out.println("Files uploaded successfully: " + filesResponse.getBody().toString());
         } else {
-            throw new RuntimeException("Failed to upload file.");
+            throw new RuntimeException("Failed to upload files.");
         }
     }
 
     public void tryUploadToDB_file(Attraction attraction) {
-        if (uploadedSingleFileUrl.isEmpty()) {
-            attraction.setLinksPreview(uploadedLinksPreview);
-            attraction.setLinksBefore(uploadedLinksBefore);
-            attraction.setLinksIn(uploadedLinksIn);
-            attraction.setLinksAfter(uploadedLinksAfter);
-        } else {
-            attraction.addToLinksPreview(uploadedSingleFileUrl.get(0));
-            attraction.addToLinksBefore(uploadedLinksBefore.get(1));
-            attraction.addToLinksIn(uploadedLinksBefore.get(2));
-            attraction.addToLinksAfter(uploadedLinksBefore.get(3));
-        }
+        attraction.setLinksPreview(uploadedLinksPreview);
+        attraction.setLinksBefore(uploadedLinksBefore);
+        attraction.setLinksIn(uploadedLinksIn);
+        attraction.setLinksAfter(uploadedLinksAfter);
+
         try {
             String uploadQueryUrl = baseAttractionUrl;
             HttpHeaders headers = new HttpHeaders();

@@ -7,6 +7,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.example.saga.Saga.application.services.SagaService;
 import org.example.saga.Saga.dto.Attraction;
+import org.example.saga.Saga.dto.ReceivedAttraction;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -77,12 +78,7 @@ public class SagaController {
     })
     public void tryUpload_batchFiles(
             @Parameter(description = "Список файлов для загрузки", required = true)
-            @RequestBody List<MultipartFile> filesPreview,
-            @RequestBody List<MultipartFile> filesBefore,
-            @RequestBody List<MultipartFile> filesIn,
-            @RequestBody List<MultipartFile> filesAfter,
-            @Parameter(description = "Список достопримечательностей, связанных с файлами", required = true)
-            @RequestBody List<Attraction> attractions) {
-        _sagaService.tryUpload_batchFiles(filesPreview, filesBefore, filesIn, filesAfter, attractions);
+            @RequestBody ReceivedAttraction receivedAttraction) {
+        _sagaService.tryUpload_batchFiles(receivedAttraction);
     }
 }
