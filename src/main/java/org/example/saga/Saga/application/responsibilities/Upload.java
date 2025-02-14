@@ -13,137 +13,138 @@ import org.springframework.web.multipart.MultipartFile;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Класс Upload отвечает за загрузку файлов в S3 и сохранение информации о достопримечательностях в базе данных.
+ * Также реализует механизм компенсации (удаление загруженных файлов) в случае ошибок.
+ */
 @Repository
 public class Upload {
-    private final RestTemplate restTemplate;
+    private final RestTemplate restTemplate; // Клиент для выполнения HTTP-запросов
 
-    private String uploadedFileUrl = "";
-    private final List<String> uploadedFileUrls = new ArrayList<>();
-
-    @Value("${base.attraction.url}")
+    @Value("${base.attraction.url}") // URL для сохранения данных о достопримечательности
     private String baseAttractionUrl;
 
-    @Value("${base.s3.url}")
+    @Value("${base.s3.url}") // URL для загрузки файлов в S3
     private String baseS3Url;
 
+    // Списки для хранения ссылок на загруженные файлы по типам
+    private final List<String> uploadedLinksPreview = new ArrayList<>();
+    private final List<String> uploadedLinksBefore = new ArrayList<>();
+    private final List<String> uploadedLinksIn = new ArrayList<>();
+    private final List<String> uploadedLinksAfter = new ArrayList<>();
+
+    /**
+     * Конструктор для внедрения зависимости RestTemplate.
+     *
+     * @param restTemplate Клиент для выполнения HTTP-запросов
+     */
     @Autowired
     public Upload(RestTemplate restTemplate) {
         this.restTemplate = restTemplate;
     }
 
-    public void tryUploadToS3_batchFiles(List<MultipartFile> files) {
-        try {
-            String uploadFilesUrl = baseS3Url + "/batch-upload";
-            HttpHeaders headers = new HttpHeaders();
-            headers.setContentType(MediaType.MULTIPART_FORM_DATA);
+    /**
+     * Метод для загрузки пакета файлов в S3.
+     * После успешной загрузки ссылки на файлы сохраняются в соответствующий список.
+     *
+     * @param files Список файлов для загрузки
+     * @param type  Тип файлов (preview, before, in, after)
+     */
+    public void tryUploadToS3_batchFiles(List<MultipartFile> files, String type) {
+        String uploadFilesUrl = baseS3Url + "/upload"; // URL для загрузки файлов в S3
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.MULTIPART_FORM_DATA); // Устанавливаем тип содержимого запроса
 
-            HttpEntity<List<MultipartFile>> requestEntity = new HttpEntity<>(files, headers);
+        HttpEntity<List<MultipartFile>> requestEntity = new HttpEntity<>(files, headers); // Формируем запрос
 
-            var filesResponse = restTemplate.postForEntity(uploadFilesUrl, requestEntity, List.class);
+        // Выполняем запрос на загрузку файлов
+        var filesResponse = restTemplate.postForEntity(uploadFilesUrl, requestEntity, List.class);
 
-            if (filesResponse.getStatusCode().is2xxSuccessful() && filesResponse.getBody() != null) {
-                uploadedFileUrls.addAll(filesResponse.getBody());
-                System.out.println("File uploaded successfully: " + uploadedFileUrls);
-            } else {
-                throw new RuntimeException("Failed to upload file.");
+        if (filesResponse.getStatusCode().is2xxSuccessful() && filesResponse.getBody() != null) {
+            // В зависимости от типа файлов сохраняем ссылки в соответствующий список
+            switch (type) {
+                case "preview":
+                    uploadedLinksPreview.addAll(filesResponse.getBody().stream().toList());
+                    break;
+                case "before":
+                    uploadedLinksBefore.addAll(filesResponse.getBody().stream().toList());
+                    break;
+                case "in":
+                    uploadedLinksIn.addAll(filesResponse.getBody().stream().toList());
+                    break;
+                case "after":
+                    uploadedLinksAfter.addAll(filesResponse.getBody().stream().toList());
+                    break;
             }
-
-        } catch (Exception e) {
-            System.err.println("Error during saga execution: " + e.getMessage());
-
-            if (!uploadedFileUrls.isEmpty()) {
-                String deleteFilesUrl = baseS3Url + "/batch-delete";
-                HttpHeaders headers = new HttpHeaders();
-                headers.setContentType(MediaType.APPLICATION_JSON);
-
-                HttpEntity<List<String>> deleteRequest = new HttpEntity<>(uploadedFileUrls, headers);
-
-                try {
-                    restTemplate.postForEntity(deleteFilesUrl, deleteRequest, String.class);
-                    System.out.println("Compensating action: Uploaded file to S3 deleted successfully.");
-                } catch (Exception deleteException) {
-                    System.err.println("Failed to delete uploaded file during compensation: " + deleteException.getMessage());
-                }
-            }
-
-            throw new RuntimeException("Could not upload file to S3");
+            System.out.println("Files uploaded successfully: " + filesResponse.getBody().toString());
+        } else {
+            throw new RuntimeException("Failed to upload files."); // В случае ошибки выбрасываем исключение
         }
     }
 
-    public void tryUploadToS3_file(MultipartFile file) {
-        try {
-            String uploadFilesUrl = baseS3Url + "/upload";
-            HttpHeaders headers = new HttpHeaders();
-            headers.setContentType(MediaType.MULTIPART_FORM_DATA);
-
-            HttpEntity<MultipartFile> requestEntity = new HttpEntity<>(file, headers);
-
-            var filesResponse = restTemplate.postForEntity(uploadFilesUrl, requestEntity, List.class);
-
-            if (filesResponse.getStatusCode().is2xxSuccessful() && filesResponse.getBody() != null) {
-                uploadedFileUrl = filesResponse.getBody().toString();
-                System.out.println("File uploaded successfully: " + uploadedFileUrl);
-            } else {
-                throw new RuntimeException("Failed to upload file.");
-            }
-        } catch (Exception e) {
-            System.err.println("Error during saga execution: " + e.getMessage());
-
-            if (!uploadedFileUrl.isEmpty()) {
-                String deleteFilesUrl = baseS3Url + "/delete";
-                HttpHeaders headers = new HttpHeaders();
-                headers.setContentType(MediaType.APPLICATION_JSON);
-
-                HttpEntity<String> deleteRequest = new HttpEntity<>(uploadedFileUrl, headers);
-
-                try {
-                    restTemplate.postForEntity(deleteFilesUrl, deleteRequest, String.class);
-                    System.out.println("Compensating action: Uploaded file to S3 deleted successfully.");
-                } catch (Exception deleteException) {
-                    System.err.println("Failed to delete uploaded file during compensation: " + deleteException.getMessage());
-                }
-            }
-
-            throw new RuntimeException("Could not upload file to S3");
-        }
-    }
-
+    /**
+     * Метод для сохранения информации о достопримечательности в базе данных.
+     * Если происходит ошибка, выполняется компенсация (удаление загруженных файлов из S3).
+     *
+     * @param attraction Объект с информацией о достопримечательности
+     */
     public void tryUploadToDB_file(Attraction attraction) {
+        // Устанавливаем ссылки на загруженные файлы в объект Attraction
+        attraction.setLinksPreview(uploadedLinksPreview);
+        attraction.setLinksBefore(uploadedLinksBefore);
+        attraction.setLinksIn(uploadedLinksIn);
+        attraction.setLinksAfter(uploadedLinksAfter);
+
         try {
-            String uploadQueryUrl = baseAttractionUrl + "/upload";
+            String uploadQueryUrl = baseAttractionUrl; // URL для сохранения данных о достопримечательности
             HttpHeaders headers = new HttpHeaders();
-            headers.setContentType(MediaType.APPLICATION_JSON);
+            headers.setContentType(MediaType.APPLICATION_JSON); // Устанавливаем тип содержимого запроса
 
-            HttpEntity<Attraction> requestEntity = new HttpEntity<>(attraction, headers);
+            HttpEntity<Attraction> requestEntity = new HttpEntity<>(attraction, headers); // Формируем запрос
 
+            // Выполняем запрос на сохранение данных о достопримечательности
             var queryResponse = restTemplate.postForEntity(uploadQueryUrl, requestEntity, List.class);
 
             if (queryResponse.getStatusCode().is2xxSuccessful() && queryResponse.getBody() != null) {
-                System.out.println("File uploaded successfully: " + uploadedFileUrl);
+                System.out.println("Attraction saved successfully");
             } else {
-                throw new RuntimeException("Failed to upload file to db.");
+                throw new RuntimeException("Failed to upload file to db."); // В случае ошибки выбрасываем исключение
             }
 
         } catch (Exception e) {
             System.err.println("Error during saga execution: " + e.getMessage());
 
-            // if not so try to delete leftover from S3
-            if (!uploadedFileUrl.isEmpty()) {
-                String deleteFileUrl = baseS3Url + "/delete";
-                HttpHeaders headers = new HttpHeaders();
-                headers.setContentType(MediaType.APPLICATION_JSON);
+            // Если произошла ошибка, удаляем все загруженные файлы из S3 (компенсация)
+            deleteFilesFromS3(attraction.getLinksPreview());
+            deleteFilesFromS3(attraction.getLinksBefore());
+            deleteFilesFromS3(attraction.getLinksIn());
+            deleteFilesFromS3(attraction.getLinksAfter());
+        }
+    }
 
-                HttpEntity<String> deleteRequest = new HttpEntity<>(uploadedFileUrl, headers);
+    /**
+     * Метод для удаления файлов из S3 в случае ошибки (компенсация).
+     *
+     * @param fileUrls Список ссылок на файлы для удаления
+     */
+    private void deleteFilesFromS3(List<String> fileUrls) {
+        if (fileUrls == null || fileUrls.isEmpty()) {
+            return; // Если список пуст, ничего не делаем
+        }
 
-                try {
-                    restTemplate.postForEntity(deleteFileUrl, deleteRequest, String.class);
-                    System.out.println("Compensating action: Uploaded file to db deleted successfully.");
-                } catch (Exception deleteException) {
-                    System.err.println("Failed to delete uploaded file from db during compensation: " + deleteException.getMessage());
-                }
+        String deleteFileUrl = baseS3Url + "/delete"; // URL для удаления файлов из S3
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON); // Устанавливаем тип содержимого запроса
+
+        // Удаляем каждый файл по его ссылке
+        for (String fileUrl : fileUrls) {
+            try {
+                HttpEntity<String> deleteRequest = new HttpEntity<>(fileUrl, headers); // Формируем запрос
+                restTemplate.postForEntity(deleteFileUrl, deleteRequest, String.class); // Выполняем запрос
+                System.out.println("Compensating action: Uploaded file " + fileUrl + " deleted successfully.");
+            } catch (Exception deleteException) {
+                System.err.println("Failed to delete uploaded file " + fileUrl + " from db during compensation: " + deleteException.getMessage());
             }
-
-            throw new RuntimeException("Saga failed and compensating actions were executed.");
         }
     }
 }

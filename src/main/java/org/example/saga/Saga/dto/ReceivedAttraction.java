@@ -1,10 +1,11 @@
 package org.example.saga.Saga.dto;
 
 import org.locationtech.jts.geom.Point;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
-public class Attraction {
+public class ReceivedAttraction {
     private Long id;
     private String name;
     private String descriptionBefore;
@@ -13,16 +14,18 @@ public class Attraction {
     private String interestingFacts;
     private Integer yearOfCreation;
     private Point location;
-    private List<String> linksPreview;
-    private List<String> linksBefore;
-    private List<String> linksIn;
-    private List<String> linksAfter;
+    private List<MultipartFile> linksPreview;
+    private List<MultipartFile> linksBefore;
+    private List<MultipartFile> linksIn;
+    private List<MultipartFile> linksAfter;
 
-    public Attraction(Long id, String name,
+    public ReceivedAttraction(Long id, String name,
                       String descriptionBefore,
                       String descriptionIn, String descriptionAfter,
                       String interestingFacts, Integer yearOfCreation,
-                      Point location) {
+                      Point location, List<MultipartFile> linksPreview,
+                      List<MultipartFile> linksBefore,
+                      List<MultipartFile> linksIn, List<MultipartFile> linksAfter) {
         this.id = id;
         this.name = name;
         this.descriptionBefore = descriptionBefore;
@@ -31,30 +34,34 @@ public class Attraction {
         this.interestingFacts = interestingFacts;
         this.yearOfCreation = yearOfCreation;
         this.location = location;
+        this.linksPreview = linksPreview;
+        this.linksBefore = linksBefore;
+        this.linksIn = linksIn;
+        this.linksAfter = linksAfter;
     }
 
 
-    public List<String> getLinksPreview() {
+    public List<MultipartFile> getLinksPreview() {
         return linksPreview;
     }
 
-    public void setLinksPreview(List<String> linksPreview) {
+    public void setLinksPreview(List<MultipartFile> linksPreview) {
         this.linksPreview = linksPreview;
     }
 
-    public void addToLinksPreview(String preview) {
+    public void addToLinksPreview(MultipartFile preview) {
         this.linksPreview.add(preview);
     }
 
-    public void addToLinksBefore(String before) {
+    public void addToLinksBefore(MultipartFile before) {
         this.linksBefore.add(before);
     }
 
-    public void addToLinksIn(String in) {
+    public void addToLinksIn(MultipartFile in) {
         this.linksIn.add(in);
     }
 
-    public void addToLinksAfter(String after) {
+    public void addToLinksAfter(MultipartFile after) {
         this.linksAfter.add(after);
     }
 
@@ -123,27 +130,27 @@ public class Attraction {
         this.location = location;
     }
 
-    public List<String> getLinksBefore() {
+    public List<MultipartFile> getLinksBefore() {
         return linksBefore;
     }
 
-    public void setLinksBefore(List<String> linksBefore) {
+    public void setLinksBefore(List<MultipartFile> linksBefore) {
         this.linksBefore = linksBefore;
     }
 
-    public List<String> getLinksIn() {
+    public List<MultipartFile> getLinksIn() {
         return linksIn;
     }
 
-    public void setLinksIn(List<String> linksIn) {
+    public void setLinksIn(List<MultipartFile> linksIn) {
         this.linksIn = linksIn;
     }
 
-    public List<String> getLinksAfter() {
+    public List<MultipartFile> getLinksAfter() {
         return linksAfter;
     }
 
-    public void setLinksAfter(List<String> linksAfter) {
+    public void setLinksAfter(List<MultipartFile> linksAfter) {
         this.linksAfter = linksAfter;
     }
 }

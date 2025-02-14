@@ -7,6 +7,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.example.saga.Saga.application.services.SagaService;
 import org.example.saga.Saga.dto.Attraction;
+import org.example.saga.Saga.dto.ReceivedAttraction;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -50,33 +51,16 @@ public class SagaController {
         _sagaService.tryDelete_file(id);
     }
 
-    @PostMapping("/upload")
-    @Operation(summary = "Загрузить файл", description = "Загружает файл и связывает его с достопримечательностью")
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Файл успешно загружен"),
-            @ApiResponse(responseCode = "400", description = "Неверный запрос"),
-            @ApiResponse(responseCode = "500", description = "Внутренняя ошибка сервера")
-    })
-    public void tryUpload_file(
-            @Parameter(description = "Файл для загрузки", required = true)
-            @RequestBody MultipartFile file,
-            @Parameter(description = "Достопримечательность, связанная с файлом", required = true)
-            @RequestBody Attraction attraction) {
-        _sagaService.tryUpload_file(file, attraction);
-    }
-
     @PostMapping("/batch-upload")
-    @Operation(summary = "Загрузить несколько файлов", description = "Загружает несколько файлов и связывает их с достопримечательностями")
+    @Operation(summary = "Загрузить достопремичательность", description = "Загружает файлы и сохраняет в достопремичательность")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Файлы успешно загружены"),
             @ApiResponse(responseCode = "400", description = "Неверный запрос"),
             @ApiResponse(responseCode = "500", description = "Внутренняя ошибка сервера")
     })
     public void tryUpload_batchFiles(
-            @Parameter(description = "Список файлов для загрузки", required = true)
-            @RequestBody List<MultipartFile> files,
-            @Parameter(description = "Список достопримечательностей, связанных с файлами", required = true)
-            @RequestBody List<Attraction> attractions) {
-        _sagaService.tryUpload_batchFiles(files, attractions);
+            @Parameter(description = "Отправленная достопремичательность на обработку", required = true)
+            @RequestBody ReceivedAttraction receivedAttraction) {
+        _sagaService.tryUpload_batchFiles(receivedAttraction);
     }
 }
