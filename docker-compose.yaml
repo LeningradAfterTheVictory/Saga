@@ -1,8 +1,14 @@
+networks:
+  custom_network:
+    external: true  # Используем внешнюю сеть
+
 services:
   java-app:
     build: .
     environment:
-      BASE_ATTRACTION_URL: http://localhost:8080/api/attractions
-      BASE_S3_URL: http://localhost:8081/files/
+      BASE_ATTRACTION_URL: http://attraction-service:8080/api/attractions
+      BASE_S3_URL: http://storage-service:8080/files/
     ports:
       - "5300:8080"
+    networks:
+      - custom_network

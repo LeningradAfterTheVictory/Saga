@@ -2,6 +2,8 @@ package org.example.saga.Saga.application.responsibilities;
 
 import org.apache.commons.io.IOUtils;
 import org.example.saga.Saga.dto.Attraction;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
@@ -28,6 +30,8 @@ import java.util.List;
  */
 @Component
 public class Delete {
+    private static final Logger logger = LoggerFactory.getLogger(Delete.class);
+
     private final RestTemplate restTemplate; // Клиент для выполнения HTTP-запросов
     private final Upload uploadOperation; // Компонент для загрузки файлов (используется для компенсации)
 
@@ -71,9 +75,9 @@ public class Delete {
             // Выполняем DELETE-запрос для удаления файлов
             restTemplate.exchange(uri, HttpMethod.DELETE, HttpEntity.EMPTY, String.class);
 
-            System.out.println("Files deleted successfully from S3.");
+            logger.info("Files deleted successfully from S3.");
         } catch (Exception e) {
-            System.err.println("Error while deleting from S3: " + e.getMessage());
+            logger.error("Error while deleting from S3: " + e.getMessage());
         }
     }
 
@@ -88,7 +92,7 @@ public class Delete {
             // Выполняем DELETE-запрос для удаления данных из базы данных
             restTemplate.delete(baseAttractionUrl + "/" + id);
         } catch (Exception e) {
-            System.err.println("Error while deleting from DB: " + e.getMessage());
+            logger.error("Error while deleting from DB: " + e.getMessage());
 
             // Если произошла ошибка, восстанавливаем удаленные файлы в S3 (компенсация)
             List<MultipartFile> links_preview = new ArrayList<>();
@@ -144,10 +148,10 @@ public class Delete {
                 linksBefore = attraction.getLinksBefore();
                 linksAfter = attraction.getLinksAfter();
             } else {
-                System.out.println("Error while getting the entity: " + response.getStatusCode());
+                logger.error("Error while getting the entity: " + response.getStatusCode());
             }
         } catch (Exception e) {
-            System.out.println("Could not get the entity from db: " + e);
+            logger.error("Could not get the entity from db: " + e);
         }
     }
 
@@ -185,7 +189,7 @@ public class Delete {
                 );
             }
         } catch (IOException e) {
-            System.err.println("Ошибка при конвертации URL в MultipartFile: " + e.getMessage());
+            logger.error("Ошибка при конвертации URL в MultipartFile: " + e.getMessage());
             return null;
         }
     }

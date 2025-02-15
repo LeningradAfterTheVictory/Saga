@@ -1,15 +1,24 @@
 package org.example.saga.Saga.application.responsibilities;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.example.saga.Saga.dto.Attraction;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.io.FileSystemResource;
 import org.springframework.stereotype.Repository;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
+import org.springframework.util.LinkedMultiValueMap;
+import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -19,6 +28,7 @@ import java.util.List;
  */
 @Repository
 public class Upload {
+    private static final Logger logger = LoggerFactory.getLogger(Upload.class);
     private final RestTemplate restTemplate; // Клиент для выполнения HTTP-запросов
 
     @Value("${base.attraction.url}") // URL для сохранения данных о достопримечательности
@@ -51,11 +61,20 @@ public class Upload {
      * @param type  Тип файлов (preview, before, in, after)
      */
     public void tryUploadToS3_batchFiles(List<MultipartFile> files, String type) {
-        String uploadFilesUrl = baseS3Url + "/upload"; // URL для загрузки файлов в S3
-        HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.MULTIPART_FORM_DATA); // Устанавливаем тип содержимого запроса
+        String uploadFilesUrl = baseS3Url + "/batch-upload"; // URL для загрузки файлов в S3
 
-        HttpEntity<List<MultipartFile>> requestEntity = new HttpEntity<>(files, headers); // Формируем запрос
+        // Создаем MultiValueMap для передачи файлов
+        MultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
+        for (MultipartFile file : files) {
+            body.add("photos", new FileSystemResource(convertMultipartFileToFile(file)));
+        }
+
+        // Устанавливаем заголовки
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.MULTIPART_FORM_DATA);
+
+        // Формируем запрос
+        HttpEntity<MultiValueMap<String, Object>> requestEntity = new HttpEntity<>(body, headers);
 
         // Выполняем запрос на загрузку файлов
         var filesResponse = restTemplate.postForEntity(uploadFilesUrl, requestEntity, List.class);
@@ -76,7 +95,7 @@ public class Upload {
                     uploadedLinksAfter.addAll(filesResponse.getBody().stream().toList());
                     break;
             }
-            System.out.println("Files uploaded successfully: " + filesResponse.getBody().toString());
+            logger.info("Files uploaded successfully: " + filesResponse.getBody().toString());
         } else {
             throw new RuntimeException("Failed to upload files."); // В случае ошибки выбрасываем исключение
         }
@@ -103,16 +122,16 @@ public class Upload {
             HttpEntity<Attraction> requestEntity = new HttpEntity<>(attraction, headers); // Формируем запрос
 
             // Выполняем запрос на сохранение данных о достопримечательности
-            var queryResponse = restTemplate.postForEntity(uploadQueryUrl, requestEntity, List.class);
+            var queryResponse = restTemplate.postForEntity(uploadQueryUrl, requestEntity, Void.class);
 
-            if (queryResponse.getStatusCode().is2xxSuccessful() && queryResponse.getBody() != null) {
-                System.out.println("Attraction saved successfully");
+            if (queryResponse.getStatusCode().is2xxSuccessful()) {
+                logger.info("Attraction saved successfully");
             } else {
                 throw new RuntimeException("Failed to upload file to db."); // В случае ошибки выбрасываем исключение
             }
 
         } catch (Exception e) {
-            System.err.println("Error during saga execution: " + e.getMessage());
+            logger.error("Error during saga execution: " + e.getMessage());
 
             // Если произошла ошибка, удаляем все загруженные файлы из S3 (компенсация)
             deleteFilesFromS3(attraction.getLinksPreview());
@@ -141,10 +160,20 @@ public class Upload {
             try {
                 HttpEntity<String> deleteRequest = new HttpEntity<>(fileUrl, headers); // Формируем запрос
                 restTemplate.postForEntity(deleteFileUrl, deleteRequest, String.class); // Выполняем запрос
-                System.out.println("Compensating action: Uploaded file " + fileUrl + " deleted successfully.");
+                logger.info("Compensating action: Uploaded file " + fileUrl + " deleted successfully.");
             } catch (Exception deleteException) {
-                System.err.println("Failed to delete uploaded file " + fileUrl + " from db during compensation: " + deleteException.getMessage());
+                logger.error("Failed to delete uploaded file " + fileUrl + " from db during compensation: " + deleteException.getMessage());
             }
+        }
+    }
+
+    private File convertMultipartFileToFile(MultipartFile multipartFile) {
+        try {
+            File file = File.createTempFile("temp", null);
+            multipartFile.transferTo(file);
+            return file;
+        } catch (IOException e) {
+            throw new RuntimeException("Failed to convert MultipartFile to File", e);
         }
     }
 }

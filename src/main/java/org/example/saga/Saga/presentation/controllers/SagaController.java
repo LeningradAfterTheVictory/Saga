@@ -7,8 +7,11 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.example.saga.Saga.application.services.SagaService;
 import org.example.saga.Saga.dto.Attraction;
+import org.example.saga.Saga.dto.DeleteBatchFilesDTO;
+import org.example.saga.Saga.dto.DeleteSingleIdentifierDTO;
 import org.example.saga.Saga.dto.ReceivedAttraction;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -34,8 +37,8 @@ public class SagaController {
     })
     public void tryDelete_batchFiles(
             @Parameter(description = "Список идентификаторов файлов для удаления", required = true)
-            @RequestBody List<Long> ids) {
-        _sagaService.tryDelete_batchFiles(ids);
+            @RequestBody DeleteBatchFilesDTO deleteBatchFilesDTO) {
+        _sagaService.tryDelete_batchFiles(deleteBatchFilesDTO.getIds());
     }
 
     @DeleteMapping("/delete")
@@ -47,11 +50,11 @@ public class SagaController {
     })
     public void tryDelete_file(
             @Parameter(description = "Идентификатор файла для удаления", required = true)
-            @RequestBody Long id) {
-        _sagaService.tryDelete_file(id);
+            @RequestBody DeleteSingleIdentifierDTO deleteSingleIdentifierDTO) {
+        _sagaService.tryDelete_file(deleteSingleIdentifierDTO.getId());
     }
 
-    @PostMapping("/batch-upload")
+    @PostMapping(value = "/batch-upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @Operation(summary = "Загрузить достопремичательность", description = "Загружает файлы и сохраняет в достопремичательность")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Файлы успешно загружены"),
@@ -60,7 +63,16 @@ public class SagaController {
     })
     public void tryUpload_batchFiles(
             @Parameter(description = "Отправленная достопремичательность на обработку", required = true)
-            @RequestBody ReceivedAttraction receivedAttraction) {
+            @RequestPart("attraction") ReceivedAttraction receivedAttraction,
+            @RequestPart("linksPreview") List<MultipartFile> linksPreview,
+            @RequestPart("linksBefore") List<MultipartFile> linksBefore,
+            @RequestPart("linksIn") List<MultipartFile> linksIn,
+            @RequestPart("linksAfter") List<MultipartFile> linksAfter) {
+        receivedAttraction.setLinksPreview(linksPreview);
+        receivedAttraction.setLinksBefore(linksBefore);
+        receivedAttraction.setLinksIn(linksIn);
+        receivedAttraction.setLinksAfter(linksAfter);
+
         _sagaService.tryUpload_batchFiles(receivedAttraction);
     }
 }
