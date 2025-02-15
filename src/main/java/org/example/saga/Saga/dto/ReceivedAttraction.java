@@ -1,5 +1,7 @@
 package org.example.saga.Saga.dto;
 
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import org.example.saga.Saga.presentation.deserializers.PointDeserializer;
 import org.locationtech.jts.geom.Point;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -13,7 +15,10 @@ public class ReceivedAttraction {
     private String descriptionAfter;
     private String interestingFacts;
     private Integer yearOfCreation;
+
+    @JsonDeserialize(using = PointDeserializer.class)
     private Point location;
+
     private List<MultipartFile> linksPreview;
     private List<MultipartFile> linksBefore;
     private List<MultipartFile> linksIn;

@@ -1,5 +1,9 @@
 package org.example.saga.Saga.dto;
 
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import org.example.saga.Saga.presentation.deserializers.PointDeserializer;
+import org.example.saga.Saga.presentation.serializers.PointSerializer;
 import org.locationtech.jts.geom.Point;
 
 import java.util.List;
@@ -12,7 +16,11 @@ public class Attraction {
     private String descriptionAfter;
     private String interestingFacts;
     private Integer yearOfCreation;
+
+    @JsonSerialize(using = PointSerializer.class)
+    @JsonDeserialize(using = PointDeserializer.class)
     private Point location;
+
     private List<String> linksPreview;
     private List<String> linksBefore;
     private List<String> linksIn;
