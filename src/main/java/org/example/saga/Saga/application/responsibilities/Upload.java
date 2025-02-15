@@ -3,6 +3,8 @@ package org.example.saga.Saga.application.responsibilities;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.example.saga.Saga.dto.Attraction;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.FileSystemResource;
@@ -26,6 +28,7 @@ import java.util.List;
  */
 @Repository
 public class Upload {
+    private static final Logger logger = LoggerFactory.getLogger(Upload.class);
     private final RestTemplate restTemplate; // Клиент для выполнения HTTP-запросов
 
     @Value("${base.attraction.url}") // URL для сохранения данных о достопримечательности
@@ -92,7 +95,7 @@ public class Upload {
                     uploadedLinksAfter.addAll(filesResponse.getBody().stream().toList());
                     break;
             }
-            System.out.println("Files uploaded successfully: " + filesResponse.getBody().toString());
+            logger.info("Files uploaded successfully: " + filesResponse.getBody().toString());
         } else {
             throw new RuntimeException("Failed to upload files."); // В случае ошибки выбрасываем исключение
         }
@@ -112,15 +115,6 @@ public class Upload {
         attraction.setLinksAfter(uploadedLinksAfter);
 
         try {
-            ObjectMapper objectMapper = new ObjectMapper();
-            String attractionJson = objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(attraction);
-            System.out.println("Attraction JSON before sending:\n" + attractionJson);
-        } catch (JsonProcessingException e) {
-            System.err.println("Error converting Attraction to JSON: " + e.getMessage());
-        }
-
-
-        try {
             String uploadQueryUrl = baseAttractionUrl; // URL для сохранения данных о достопримечательности
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_JSON); // Устанавливаем тип содержимого запроса
@@ -131,13 +125,13 @@ public class Upload {
             var queryResponse = restTemplate.postForEntity(uploadQueryUrl, requestEntity, Void.class);
 
             if (queryResponse.getStatusCode().is2xxSuccessful()) {
-                System.out.println("Attraction saved successfully");
+                logger.info("Attraction saved successfully");
             } else {
                 throw new RuntimeException("Failed to upload file to db."); // В случае ошибки выбрасываем исключение
             }
 
         } catch (Exception e) {
-            System.err.println("Error during saga execution: " + e.getMessage());
+            logger.error("Error during saga execution: " + e.getMessage());
 
             // Если произошла ошибка, удаляем все загруженные файлы из S3 (компенсация)
             deleteFilesFromS3(attraction.getLinksPreview());
@@ -166,9 +160,9 @@ public class Upload {
             try {
                 HttpEntity<String> deleteRequest = new HttpEntity<>(fileUrl, headers); // Формируем запрос
                 restTemplate.postForEntity(deleteFileUrl, deleteRequest, String.class); // Выполняем запрос
-                System.out.println("Compensating action: Uploaded file " + fileUrl + " deleted successfully.");
+                logger.info("Compensating action: Uploaded file " + fileUrl + " deleted successfully.");
             } catch (Exception deleteException) {
-                System.err.println("Failed to delete uploaded file " + fileUrl + " from db during compensation: " + deleteException.getMessage());
+                logger.error("Failed to delete uploaded file " + fileUrl + " from db during compensation: " + deleteException.getMessage());
             }
         }
     }
