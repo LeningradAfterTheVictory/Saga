@@ -6,7 +6,6 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.example.saga.Saga.application.services.SagaService;
-import org.example.saga.Saga.dto.Attraction;
 import org.example.saga.Saga.dto.DeleteBatchFilesDTO;
 import org.example.saga.Saga.dto.DeleteSingleIdentifierDTO;
 import org.example.saga.Saga.dto.ReceivedAttraction;
@@ -33,6 +32,7 @@ public class SagaController {
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Файлы успешно удалены"),
             @ApiResponse(responseCode = "400", description = "Неверный запрос"),
+            @ApiResponse(responseCode = "401", description = "Срок действия токена истек"),
             @ApiResponse(responseCode = "500", description = "Внутренняя ошибка сервера")
     })
     public void tryDelete_batchFiles(
@@ -46,6 +46,7 @@ public class SagaController {
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Файл успешно удален"),
             @ApiResponse(responseCode = "400", description = "Неверный запрос"),
+            @ApiResponse(responseCode = "401", description = "Срок действия токена истек"),
             @ApiResponse(responseCode = "500", description = "Внутренняя ошибка сервера")
     })
     public void tryDelete_file(
@@ -59,6 +60,7 @@ public class SagaController {
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Файлы успешно загружены"),
             @ApiResponse(responseCode = "400", description = "Неверный запрос"),
+            @ApiResponse(responseCode = "401", description = "Срок действия токена истек"),
             @ApiResponse(responseCode = "500", description = "Внутренняя ошибка сервера")
     })
     public void tryUpload_batchFiles(
