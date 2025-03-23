@@ -75,6 +75,7 @@ public class SagaService {
         Attraction attraction = new Attraction(
                 receivedAttraction.getId(),
                 receivedAttraction.getName(),
+                receivedAttraction.getSmallDescription(),
                 receivedAttraction.getDescriptionBefore(),
                 receivedAttraction.getDescriptionIn(),
                 receivedAttraction.getDescriptionAfter(),

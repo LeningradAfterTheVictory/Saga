@@ -10,6 +10,7 @@ import java.util.List;
 public class ReceivedAttraction {
     private Long id;
     private String name;
+    private String smallDescription;
     private String descriptionBefore;
     private String descriptionIn;
     private String descriptionAfter;
@@ -25,6 +26,7 @@ public class ReceivedAttraction {
     private List<MultipartFile> linksAfter;
 
     public ReceivedAttraction(Long id, String name,
+                              String smallDescription,
                       String descriptionBefore,
                       String descriptionIn, String descriptionAfter,
                       String interestingFacts, Integer yearOfCreation,
@@ -33,6 +35,7 @@ public class ReceivedAttraction {
                       List<MultipartFile> linksIn, List<MultipartFile> linksAfter) {
         this.id = id;
         this.name = name;
+        this.smallDescription = smallDescription;
         this.descriptionBefore = descriptionBefore;
         this.descriptionIn = descriptionIn;
         this.descriptionAfter = descriptionAfter;
@@ -43,6 +46,14 @@ public class ReceivedAttraction {
         this.linksBefore = linksBefore;
         this.linksIn = linksIn;
         this.linksAfter = linksAfter;
+    }
+
+    public String getSmallDescription() {
+        return smallDescription;
+    }
+
+    public void setSmallDescription(String smallDescription) {
+        this.smallDescription = smallDescription;
     }
 
 

@@ -11,6 +11,7 @@ import java.util.List;
 public class Attraction {
     private Long id;
     private String name;
+    private String smallDescription;
     private String descriptionBefore;
     private String descriptionIn;
     private String descriptionAfter;
@@ -27,12 +28,14 @@ public class Attraction {
     private List<String> linksAfter;
 
     public Attraction(Long id, String name,
+                      String smallDescription,
                       String descriptionBefore,
                       String descriptionIn, String descriptionAfter,
                       String interestingFacts, Integer yearOfCreation,
                       Point location) {
         this.id = id;
         this.name = name;
+        this.smallDescription = smallDescription;
         this.descriptionBefore = descriptionBefore;
         this.descriptionIn = descriptionIn;
         this.descriptionAfter = descriptionAfter;
@@ -41,6 +44,13 @@ public class Attraction {
         this.location = location;
     }
 
+    public String getSmallDescription() {
+        return smallDescription;
+    }
+
+    public void setSmallDescription(String smallDescription) {
+        this.smallDescription = smallDescription;
+    }
 
     public List<String> getLinksPreview() {
         return linksPreview;
