@@ -119,6 +119,11 @@ public class Delete {
             uploadOperation.tryUploadToS3_batchFiles(links_before, "before");
             uploadOperation.tryUploadToS3_batchFiles(links_in, "in");
             uploadOperation.tryUploadToS3_batchFiles(links_after, "after");
+
+            linksPreview.clear();
+            linksBefore.clear();
+            linksIn.clear();
+            linksAfter.clear();
         }
     }
 

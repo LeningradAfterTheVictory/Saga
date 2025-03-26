@@ -113,7 +113,7 @@ public class Upload {
                 default:
                     logger.info("INCORRECT TYPE");
             }
-            
+
             logger.info("Files uploaded successfully: " + filesResponse.getBody().toString());
         } else {
             throw new RuntimeException("Failed to upload files."); // В случае ошибки выбрасываем исключение
@@ -175,6 +175,11 @@ public class Upload {
             deleteFilesFromS3(attraction.getLinksIn());
             deleteFilesFromS3(attraction.getLinksAfter());
         }
+
+        uploadedLinksPreview.clear();
+        uploadedLinksBefore.clear();
+        uploadedLinksIn.clear();
+        uploadedLinksAfter.clear();
     }
 
     /**
