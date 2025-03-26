@@ -83,18 +83,37 @@ public class Upload {
             // В зависимости от типа файлов сохраняем ссылки в соответствующий список
             switch (type) {
                 case "preview":
+                    logger.info("Added preview photos");
+                    for (Object url : filesResponse.getBody().stream().toList()) {
+                        System.out.println(url);
+                    }
                     uploadedLinksPreview.addAll(filesResponse.getBody().stream().toList());
                     break;
                 case "before":
+                    logger.info("Added before photos");
+                    for (Object url : filesResponse.getBody().stream().toList()) {
+                        System.out.println(url);
+                    }
                     uploadedLinksBefore.addAll(filesResponse.getBody().stream().toList());
                     break;
                 case "in":
+                    logger.info("Added in photos");
+                    for (Object url : filesResponse.getBody().stream().toList()) {
+                        System.out.println(url);
+                    }
                     uploadedLinksIn.addAll(filesResponse.getBody().stream().toList());
                     break;
                 case "after":
+                    logger.info("Added after photos");
+                    for (Object url : filesResponse.getBody().stream().toList()) {
+                        System.out.println(url);
+                    }
                     uploadedLinksAfter.addAll(filesResponse.getBody().stream().toList());
                     break;
+                default:
+                    logger.info("INCORRECT TYPE");
             }
+            
             logger.info("Files uploaded successfully: " + filesResponse.getBody().toString());
         } else {
             throw new RuntimeException("Failed to upload files."); // В случае ошибки выбрасываем исключение
@@ -113,6 +132,23 @@ public class Upload {
         attraction.setLinksBefore(uploadedLinksBefore);
         attraction.setLinksIn(uploadedLinksIn);
         attraction.setLinksAfter(uploadedLinksAfter);
+
+        logger.info("PREVIEW PHOTOS");
+        for (String url : attraction.getLinksPreview()) {
+            System.out.println(url);
+        }
+        logger.info("BEFORE PHOTOS");
+        for (String url : attraction.getLinksBefore()) {
+            System.out.println(url);
+        }
+        logger.info("IN PHOTOS");
+        for (String url : attraction.getLinksIn()) {
+            System.out.println(url);
+        }
+        logger.info("AFTER PHOTOS");
+        for (String url : attraction.getLinksAfter()) {
+            System.out.println(url);
+        }
 
         try {
             String uploadQueryUrl = baseAttractionUrl; // URL для сохранения данных о достопримечательности
